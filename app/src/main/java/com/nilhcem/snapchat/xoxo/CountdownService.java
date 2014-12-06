@@ -3,6 +3,7 @@ package com.nilhcem.snapchat.xoxo;
 import android.app.IntentService;
 import android.app.Notification;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.support.v4.app.NotificationCompat;
@@ -55,14 +56,18 @@ public class CountdownService extends IntentService {
 
     private void takeScreenshotAsRoot() {
         Process sh;
-        File screenshot = new File(getImagesDirectory(), Long.toString(System.currentTimeMillis()) + SCREENSHOTS_EXT);
+        File outputFile = new File(getImagesDirectory(), Long.toString(System.currentTimeMillis()) + SCREENSHOTS_EXT);
 
         try {
+            // Run screencap as su.
             sh = Runtime.getRuntime().exec(CMD_SU, null, null);
             OutputStream os = sh.getOutputStream();
-            os.write((String.format(Locale.US, CMD_SCREENCAP, screenshot.getAbsolutePath())).getBytes(CHARSET_NAME));
+            os.write((String.format(Locale.US, CMD_SCREENCAP, outputFile.getAbsolutePath())).getBytes(CHARSET_NAME));
             os.flush();
             os.close();
+
+            // Force the MediaScanner to add the file (so it is visible on the gallery).
+            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(outputFile)));
         } catch (IOException e) {
         }
     }
