@@ -12,7 +12,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         startSnapchatApp();
-        startCoundownService();
+        startCountdownService();
         finish();
     }
 
@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
         startActivity(LaunchIntent);
     }
 
-    private void startCoundownService() {
+    private void startCountdownService() {
         startService(new Intent(this, CountdownService.class));
     }
 }
