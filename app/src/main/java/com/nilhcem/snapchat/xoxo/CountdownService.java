@@ -1,61 +1,103 @@
 package com.nilhcem.snapchat.xoxo;
 
-import android.app.IntentService;
-import android.app.Notification;
+import android.app.Service;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.PixelFormat;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.CountDownTimer;
 import android.os.Environment;
-import android.support.v4.app.NotificationCompat;
+import android.os.IBinder;
+import android.view.Gravity;
+import android.view.WindowManager;
+import android.widget.TextView;
+
+import com.nilhcem.snapchat.xoxo.core.Compatibility;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Locale;
 
-public class CountdownService extends IntentService {
-
-    private static final int FOREGROUND_ID = 1338;
-    private static final long SLEEP_TIME = 4000;
+public class CountdownService extends Service {
 
     private static final String OUTPUT_DIR = "snapchatxoxo";
-    private static final String CHARSET_NAME = "ASCII";
-    private static final String SCREENSHOTS_EXT = ".png";
-
-    private static final String CMD_SU = "su";
     private static final String CMD_SCREENCAP = "/system/bin/screencap -p %s";
 
-    public CountdownService() {
-        super(CountdownService.class.getSimpleName());
+    private WindowManager mWindowManager;
+    private TextView mCountdownView;
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        new CountDownTimer(5000, 250) {
+            @Override
+            public void onTick(final long millisUntilFinished) {
+                mCountdownView.setText(Integer.toString(Math.round((float) millisUntilFinished / 1000)));
+            }
+
+            @Override
+            public void onFinish() {
+                mWindowManager.removeView(mCountdownView);
+
+                new AsyncTask<Void, Void, Void>() {
+                    @Override
+                    protected Void doInBackground(Void... params) {
+                        takeScreenshotAsRoot();
+                        return null;
+                    }
+                }.execute();
+
+                stopSelf();
+            }
+        }.start();
+        return START_NOT_STICKY;
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
-        startForeground(FOREGROUND_ID, buildForegroundNotification());
+    public void onCreate() {
+        super.onCreate();
+        Resources resources = getResources();
+        mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-        try {
-            Thread.sleep(SLEEP_TIME);
-            takeScreenshotAsRoot();
-            stopForeground(true);
-        } catch (Exception e) {
-        }
+        int textSize = Compatibility.convertDpToIntPixel(10f, this);
+        int paddingSize = Compatibility.convertDpToIntPixel(20f, this);
+        int countdownSize = Compatibility.convertDpToIntPixel(50f, this);
+
+        mCountdownView = new TextView(this);
+        mCountdownView.setGravity(Gravity.CENTER);
+        mCountdownView.setTextSize(textSize);
+        mCountdownView.setTextColor(resources.getColor(R.color.countdown_text));
+        mCountdownView.setBackground(resources.getDrawable(R.drawable.countdown_bg));
+        Compatibility.setElevation(4f, mCountdownView);
+
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                countdownSize, countdownSize,
+                WindowManager.LayoutParams.TYPE_PHONE,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                PixelFormat.TRANSLUCENT);
+
+        params.gravity = Gravity.TOP | Gravity.RIGHT;
+        params.x = paddingSize;
+        params.y = paddingSize;
+
+        mWindowManager.addView(mCountdownView, params);
     }
 
-    private Notification buildForegroundNotification() {
-        return new NotificationCompat.Builder(this)
-                .setOngoing(true)
-                .setTicker(getString(R.string.say_cheese))
-                .build();
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 
     private void takeScreenshotAsRoot() {
         Process sh;
-        File outputFile = new File(getImagesDirectory(), Long.toString(System.currentTimeMillis()) + SCREENSHOTS_EXT);
+        File outputFile = new File(getImagesDirectory(), Long.toString(System.currentTimeMillis()) + ".png");
 
         try {
             // Run screencap as su.
-            sh = Runtime.getRuntime().exec(CMD_SU, null, null);
+            sh = Runtime.getRuntime().exec("su", null, null);
             OutputStream os = sh.getOutputStream();
-            os.write((String.format(Locale.US, CMD_SCREENCAP, outputFile.getAbsolutePath())).getBytes(CHARSET_NAME));
+            os.write((String.format(Locale.US, CMD_SCREENCAP, outputFile.getAbsolutePath())).getBytes("ASCII"));
             os.flush();
             os.close();
 

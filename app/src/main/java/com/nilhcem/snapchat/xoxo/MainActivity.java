@@ -17,8 +17,8 @@ public class MainActivity extends Activity {
     }
 
     private void startSnapchatApp() {
-        Intent LaunchIntent = getPackageManager().getLaunchIntentForPackage(SNAPCHAT_PACKAGE_NAME);
-        startActivity(LaunchIntent);
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(SNAPCHAT_PACKAGE_NAME);
+        startActivity(launchIntent);
     }
 
     private void startCountdownService() {
