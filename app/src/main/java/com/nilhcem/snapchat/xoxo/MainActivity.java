@@ -1,4 +1,4 @@
-package com.nilhcem.xoxo.xoxo;
+package com.nilhcem.snapchat.xoxo;
 
 import android.app.Activity;
 import android.os.AsyncTask;
