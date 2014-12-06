@@ -4,7 +4,6 @@ import android.app.IntentService;
 import android.app.Notification;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Environment;
 import android.support.v4.app.NotificationCompat;
 
@@ -33,18 +32,12 @@ public class CountdownService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         startForeground(FOREGROUND_ID, buildForegroundNotification());
 
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-                try {
-                    Thread.sleep(SLEEP_TIME);
-                    takeScreenshotAsRoot();
-                    stopForeground(true);
-                } catch (Exception e) {
-                }
-                return null;
-            }
-        }.execute();
+        try {
+            Thread.sleep(SLEEP_TIME);
+            takeScreenshotAsRoot();
+            stopForeground(true);
+        } catch (Exception e) {
+        }
     }
 
     private Notification buildForegroundNotification() {
