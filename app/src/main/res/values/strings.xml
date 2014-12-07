@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Snapchat xoxo</string>
+    <string name="snapchat_not_found">Snapchat was not found on this device.</string>
 </resources>
