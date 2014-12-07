@@ -4,7 +4,6 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
-import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -92,8 +91,7 @@ public class CountdownService extends IntentService {
             os.flush();
             os.close();
 
-            // Force the MediaScanner to add the file (so it is visible on the gallery).
-            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(outputFile)));
+            // Do not force the MediaScanner to add the file, otherwise, Snapchat will be notified a screenshot was taken.
         } catch (IOException e) {
         }
     }
