@@ -1,7 +1,7 @@
 android-snapchat-xoxo
 =====================
 
-Starts Snapshat and takes a discreet screenshot after 5 seconds.
+Starts Snapchat and takes a discreet screenshot after 5 seconds.
 
 **ROOT ONLY**
 
