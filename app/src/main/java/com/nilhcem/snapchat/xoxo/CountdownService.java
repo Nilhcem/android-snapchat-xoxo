@@ -1,14 +1,13 @@
 package com.nilhcem.snapchat.xoxo;
 
-import android.app.Service;
+import android.app.IntentService;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.CountDownTimer;
 import android.os.Environment;
-import android.os.IBinder;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -20,38 +19,35 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Locale;
 
-public class CountdownService extends Service {
+public class CountdownService extends IntentService {
 
+    private static final int TIMER_IN_SECONDS = 5;
     private static final String OUTPUT_DIR = "snapchatxoxo";
     private static final String CMD_SCREENCAP = "/system/bin/screencap -p %s";
 
     private WindowManager mWindowManager;
     private TextView mCountdownView;
+    private Handler mUiThreadHandler = new Handler(Looper.getMainLooper());
+
+    public CountdownService() {
+        super(CountdownService.class.getSimpleName());
+    }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        new CountDownTimer(5000, 250) {
-            @Override
-            public void onTick(final long millisUntilFinished) {
-                mCountdownView.setText(Integer.toString(Math.round((float) millisUntilFinished / 1000)));
-            }
+    protected void onHandleIntent(Intent intent) {
+        for (int i = TIMER_IN_SECONDS; i >= 0; i--) {
+            updateCountdownUi(i);
 
-            @Override
-            public void onFinish() {
+            if (i == 0) {
                 mWindowManager.removeView(mCountdownView);
-
-                new AsyncTask<Void, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(Void... params) {
-                        takeScreenshotAsRoot();
-                        return null;
-                    }
-                }.execute();
-
-                stopSelf();
+                takeScreenshotAsRoot();
             }
-        }.start();
-        return START_NOT_STICKY;
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+            }
+        }
     }
 
     @Override
@@ -84,11 +80,6 @@ public class CountdownService extends Service {
         mWindowManager.addView(mCountdownView, params);
     }
 
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
-
     private void takeScreenshotAsRoot() {
         Process sh;
         File outputFile = new File(getImagesDirectory(), Long.toString(System.currentTimeMillis()) + ".png");
@@ -112,5 +103,14 @@ public class CountdownService extends Service {
         File outputDir = new File(extStore, OUTPUT_DIR);
         outputDir.mkdirs();
         return outputDir;
+    }
+
+    private void updateCountdownUi(final int secondsLeft) {
+        mUiThreadHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mCountdownView.setText(Integer.toString(secondsLeft));
+            }
+        });
     }
 }
