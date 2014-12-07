@@ -33,23 +33,6 @@ public class CountdownService extends IntentService {
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
-        for (int i = TIMER_IN_SECONDS; i >= 0; i--) {
-            updateCountdownUi(i);
-
-            if (i == 0) {
-                mWindowManager.removeView(mCountdownView);
-                takeScreenshotAsRoot();
-            } else {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                }
-            }
-        }
-    }
-
-    @Override
     public void onCreate() {
         super.onCreate();
         Resources resources = getResources();
@@ -77,6 +60,23 @@ public class CountdownService extends IntentService {
         params.y = paddingSize;
 
         mWindowManager.addView(mCountdownView, params);
+    }
+
+    @Override
+    protected void onHandleIntent(Intent intent) {
+        for (int i = TIMER_IN_SECONDS; i >= 0; i--) {
+            updateCountdownUi(i);
+
+            if (i == 0) {
+                mWindowManager.removeView(mCountdownView);
+                takeScreenshotAsRoot();
+            } else {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                }
+            }
+        }
     }
 
     private void takeScreenshotAsRoot() {
