@@ -40,11 +40,11 @@ public class CountdownService extends IntentService {
             if (i == 0) {
                 mWindowManager.removeView(mCountdownView);
                 takeScreenshotAsRoot();
-            }
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
+            } else {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                }
             }
         }
     }
