@@ -30,6 +30,8 @@ public class MainActivity extends Activity {
     }
 
     private void startCountdownService() {
-        startService(new Intent(this, CountdownService.class));
+        Intent mIntent = new Intent(this, CountdownService.class);
+        mIntent.putExtra("shouldMove", false);
+        startService(mIntent);
     }
 }

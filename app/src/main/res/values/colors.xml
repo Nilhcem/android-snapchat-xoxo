@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="countdown_bg">#ffd70084</color>
+    <color name="countdown_move_bg">#ffd600</color>
     <color name="countdown_text">#ffffffff</color>
+    <color name="countdown_move_text">#000000</color>
 </resources>
