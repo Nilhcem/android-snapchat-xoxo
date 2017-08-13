@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Snapchat xoxo</string>
+    <string name="screenshot_not_taken">Errore: screenshot non salvato</string>
+    <string name="screenshot_saved_at">Screenshot salvato in</string>
+    <string name="screenshot_taken">Screenshot fatto. Ora esci da Snapchat.</string>
+    <string name="snapchat_not_found">Snapchat non è installato in questo dispositivo.</string>
+</resources>
