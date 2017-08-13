@@ -1,13 +1,16 @@
 package com.nilhcem.snapchat.xoxo;
 
 import android.app.IntentService;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.support.annotation.Nullable;
+import android.text.format.DateFormat;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -104,28 +107,22 @@ public class CountdownService extends IntentService {
     public void onDestroy() {
         super.onDestroy();
         if (!shouldMove) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             startMoveCountdownService(moveFileName);
         }
     }
 
     private void takeScreenshotAsRoot() {
         Process sh;
-        String fname;
-        if (!shouldMove)
-            fname = Long.toString(System.currentTimeMillis()) + ".png";
-        else
-            fname = moveFileName;
-        File outputFileTmp = new File(TMP_DIR, fname);
-        File outputFile = new File(getImagesDirectory(), fname);
+        if (!shouldMove) {
+            String date = (String) DateFormat.format("yyyyMMdd-hhmmss", new java.util.Date());
+            moveFileName = "Snap_" + date + ".png";
+        }
+        File outputFileTmp = new File(TMP_DIR, moveFileName);
+        File outputFile = new File(getImagesDirectory(), moveFileName);
 
         try {
             if (!shouldMove) {
-                moveFileName = fname;
+                moveFileName = moveFileName;
                 // Run screencap as su.
                 sh = Runtime.getRuntime().exec("su", null, null);
                 OutputStream os = sh.getOutputStream();
@@ -140,6 +137,13 @@ public class CountdownService extends IntentService {
                 os.write((String.format(Locale.US, CMD_MOVE, outputFileTmp.getAbsolutePath(), outputFile.getAbsolutePath())).getBytes("ASCII"));
                 os.flush();
                 os.close();
+                sh.waitFor();
+
+                // Add it to MediaStore
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.DATA, outputFile.getAbsolutePath());
+                values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+                getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
             }
 
             // Do not force the MediaScanner to add the file, otherwise, Snapchat will be notified a screenshot was taken.
