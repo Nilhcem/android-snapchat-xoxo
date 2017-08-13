@@ -14,6 +14,7 @@ import android.text.format.DateFormat;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.nilhcem.snapchat.xoxo.core.Compatibility;
 
@@ -31,6 +32,7 @@ public class CountdownService extends IntentService {
     private static final String CMD_MOVE = "/system/bin/mv %s %s";
 
     private boolean shouldMove = false;
+    private String srcPath;
     private String moveFileName;
     private WindowManager mWindowManager;
     private TextView mCountdownView;
@@ -59,11 +61,7 @@ public class CountdownService extends IntentService {
 
         Compatibility.setElevation(4f, mCountdownView);
 
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                countdownSize, countdownSize,
-                WindowManager.LayoutParams.TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-                PixelFormat.TRANSLUCENT);
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(countdownSize, countdownSize, WindowManager.LayoutParams.TYPE_PHONE, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSLUCENT);
 
         params.gravity = Gravity.TOP | Gravity.RIGHT;
         params.x = paddingSize;
@@ -93,7 +91,16 @@ public class CountdownService extends IntentService {
 
             if (i == 0) {
                 mWindowManager.removeView(mCountdownView);
-                takeScreenshotAsRoot();
+                if (!shouldMove) {
+                    try {
+                        srcPath = takeScreenshotAsRoot();
+                    } catch (IOException | InterruptedException e) {
+                        srcPath = null;
+                        e.printStackTrace();
+                    }
+                } else {
+                    moveScreenshotAsRoot(srcPath, moveFileName);
+                }
             } else {
                 try {
                     Thread.sleep(1000);
@@ -106,48 +113,59 @@ public class CountdownService extends IntentService {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (!shouldMove) {
-            startMoveCountdownService(moveFileName);
+        if (!shouldMove && srcPath != null) {
+            startMoveCountdownService(srcPath, moveFileName);
         }
     }
 
-    private void takeScreenshotAsRoot() {
+    private String takeScreenshotAsRoot() throws IOException, InterruptedException {
         Process sh;
-        if (!shouldMove) {
-            String date = (String) DateFormat.format("yyyyMMdd-hhmmss", new java.util.Date());
-            moveFileName = "Snap_" + date + ".png";
-        }
+        String date = (String) DateFormat.format("yyyyMMdd-hhmmss", new java.util.Date());
+        moveFileName = "Snap_" + date + ".png";
         File outputFileTmp = new File(TMP_DIR, moveFileName);
-        File outputFile = new File(getImagesDirectory(), moveFileName);
 
         try {
-            if (!shouldMove) {
-                moveFileName = moveFileName;
-                // Run screencap as su.
-                sh = Runtime.getRuntime().exec("su", null, null);
-                OutputStream os = sh.getOutputStream();
-                os.write((String.format(Locale.US, CMD_SCREENCAP, outputFileTmp.getAbsolutePath())).getBytes("ASCII"));
-                os.flush();
-                os.close();
-                sh.waitFor();
-            } else {
-                // Move screenshot to internal storage
-                sh = Runtime.getRuntime().exec("su", null, null);
-                OutputStream os = sh.getOutputStream();
-                os.write((String.format(Locale.US, CMD_MOVE, outputFileTmp.getAbsolutePath(), outputFile.getAbsolutePath())).getBytes("ASCII"));
-                os.flush();
-                os.close();
-                sh.waitFor();
+            // Run screencap as su.
+            sh = Runtime.getRuntime().exec("su", null, null);
+            OutputStream os = sh.getOutputStream();
+            os.write((String.format(Locale.US, CMD_SCREENCAP, outputFileTmp.getAbsolutePath())).getBytes("ASCII"));
+            os.flush();
+            os.close();
+            sh.waitFor();
 
-                // Add it to MediaStore
-                ContentValues values = new ContentValues();
-                values.put(MediaStore.Images.Media.DATA, outputFile.getAbsolutePath());
-                values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
-                getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-            }
+            showToast(getString(R.string.screenshot_taken), Toast.LENGTH_LONG);
 
-            // Do not force the MediaScanner to add the file, otherwise, Snapchat will be notified a screenshot was taken.
+            return outputFileTmp.getAbsolutePath();
+        } catch (IOException | InterruptedException e) {
+            showToast(getString(R.string.screenshot_not_taken), Toast.LENGTH_LONG);
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    private void moveScreenshotAsRoot(String src, String fileName) {
+        Process sh;
+        File outputFile = new File(getImagesDirectory(), fileName);
+
+        try {
+            // Move screenshot to internal storage
+            sh = Runtime.getRuntime().exec("su", null, null);
+            OutputStream os = sh.getOutputStream();
+            os.write((String.format(Locale.US, CMD_MOVE, src, outputFile.getAbsolutePath())).getBytes("ASCII"));
+            os.flush();
+            os.close();
+            sh.waitFor();
+
+            // Add it to MediaStore
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DATA, outputFile.getAbsolutePath());
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+            getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+            showToast(getString(R.string.screenshot_saved_at) + " " + OUTPUT_DIR + "/" + moveFileName, Toast.LENGTH_LONG);
+
         } catch (IOException e) {
+            e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -169,10 +187,20 @@ public class CountdownService extends IntentService {
         });
     }
 
-    private void startMoveCountdownService(String fileName) {
+    private void startMoveCountdownService(String srcPath, String fileName) {
         Intent mIntent = new Intent(this, CountdownService.class);
         mIntent.putExtra("shouldMove", true);
+        mIntent.putExtra("srcPath", srcPath);
         mIntent.putExtra("fileName", fileName);
         startService(mIntent);
+    }
+
+    private void showToast(final String text, final int duration) {
+        mUiThreadHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(CountdownService.this, text, duration).show();
+            }
+        });
     }
 }
