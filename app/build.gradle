@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion '21.1.1'
+    compileSdkVersion 22
+    buildToolsVersion '22.0.0'
 
     defaultConfig {
         applicationId 'com.nilhcem.snapchat.xoxo'
         minSdkVersion 16
-        targetSdkVersion 21
+        targetSdkVersion 22
         versionCode 1
         versionName '1.0'
         resConfig 'en'
@@ -27,5 +27,5 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:21.0.2'
+    compile 'com.android.support:support-v4:22.0.0'
 }
