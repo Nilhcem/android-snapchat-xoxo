@@ -125,13 +125,14 @@ public class CountdownService extends IntentService {
 
         try {
             if (!shouldMove) {
+                moveFileName = fname;
                 // Run screencap as su.
                 sh = Runtime.getRuntime().exec("su", null, null);
                 OutputStream os = sh.getOutputStream();
                 os.write((String.format(Locale.US, CMD_SCREENCAP, outputFileTmp.getAbsolutePath())).getBytes("ASCII"));
                 os.flush();
                 os.close();
-                moveFileName = fname;
+                sh.waitFor();
             } else {
                 // Move screenshot to internal storage
                 sh = Runtime.getRuntime().exec("su", null, null);
@@ -143,6 +144,8 @@ public class CountdownService extends IntentService {
 
             // Do not force the MediaScanner to add the file, otherwise, Snapchat will be notified a screenshot was taken.
         } catch (IOException e) {
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
