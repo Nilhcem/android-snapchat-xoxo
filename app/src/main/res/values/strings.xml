@@ -2,4 +2,7 @@
 <resources>
     <string name="app_name">Snapchat xoxo</string>
     <string name="snapchat_not_found">Snapchat was not found on this device.</string>
+    <string name="screenshot_saved_at">Screenshot saved at</string>
+    <string name="screenshot_not_taken">Error: screenshot not taken.</string>
+    <string name="screenshot_taken">Screenshot taken. Now exit Snapchat.</string>
 </resources>
